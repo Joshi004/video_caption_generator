@@ -26,6 +26,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { videoAPI } from '../services/api';
 
+// Default prompts for each model (same as ModelSelector)
+const DEFAULT_PROMPTS = {
+  qwen2vl: "Describe what you see in this video, including actions, objects, and any visible text on screen.",
+  omnivinci: "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
+  qwen3omni: "Analyze this video comprehensively. Describe the visual content, audio elements, context, and explain the meaning or story. Include detailed reasoning about what's happening and why."
+};
+
 const CaptionViewer = ({
   open,
   onClose,
@@ -71,7 +78,9 @@ const CaptionViewer = ({
   const handleGenerateWithModel = async (modelKey) => {
     try {
       setGenerating(modelKey);
-      await videoAPI.generateCaption(videoFilename, modelKey, null, false);
+      // Use default prompt for the model if available
+      const prompt = DEFAULT_PROMPTS[modelKey] || DEFAULT_PROMPTS.qwen2vl;
+      await videoAPI.generateCaption(videoFilename, modelKey, prompt, false);
       await fetchAllCaptions();
     } catch (error) {
       console.error(`Error generating with ${modelKey}:`, error);
@@ -83,7 +92,9 @@ const CaptionViewer = ({
   const handleRegenerateModel = async (modelKey) => {
     try {
       setGenerating(modelKey);
-      await videoAPI.generateCaption(videoFilename, modelKey, null, true);
+      // Use default prompt for the model if available
+      const prompt = DEFAULT_PROMPTS[modelKey] || DEFAULT_PROMPTS.qwen2vl;
+      await videoAPI.generateCaption(videoFilename, modelKey, prompt, true);
       await fetchAllCaptions();
     } catch (error) {
       console.error(`Error regenerating with ${modelKey}:`, error);

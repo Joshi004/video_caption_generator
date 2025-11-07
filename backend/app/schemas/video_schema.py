@@ -18,6 +18,7 @@ class CaptionResponse(BaseModel):
     """Caption response schema"""
     filename: str
     caption: str
+    prompt: str  # Prompt used to generate the caption
     generated_at: datetime
     processing_time_seconds: float
     model_name: str

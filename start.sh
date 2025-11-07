@@ -109,6 +109,7 @@ $DOCKER_COMPOSE down > /dev/null 2>&1 || true
 
 # Start Docker services
 echo "Building and starting containers..."
+echo -e "${YELLOW}Note:${NC} Using cached layers. For complete rebuild, use: ./hard-restart.sh"
 $DOCKER_COMPOSE up --build -d
 
 if [ $? -ne 0 ]; then

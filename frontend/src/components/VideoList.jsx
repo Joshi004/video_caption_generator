@@ -190,7 +190,7 @@ const VideoList = () => {
           Video Caption Service
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Generate captions using Qwen2-VL-7B or OmniVinci on remote H100 cluster
+          Generate captions using For any video file
         </Typography>
       </Box>
 

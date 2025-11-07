@@ -35,7 +35,9 @@ export const videoAPI = {
   // Generate caption with model selection
   generateCaption: async (filename, model = 'qwen2vl', prompt = null, regenerate = false) => {
     const params = { model, regenerate };
-    const data = prompt ? { prompt } : {};
+    // Always send prompt in body - send empty string if null/undefined (backend will use default)
+    // Using empty string instead of null because axios/FastAPI might strip null values
+    const data = { prompt: prompt || "" };
     
     const response = await api.post(
       `/api/videos/${filename}/caption`,

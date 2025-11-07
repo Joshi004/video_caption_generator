@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from fastapi.responses import FileResponse
 from typing import List, Optional
 import os
 from pathlib import Path
 
-from ..schemas.video_schema import VideoInfo, CaptionResponse
+from ..schemas.video_schema import VideoInfo, CaptionResponse, CaptionGenerateRequest
 from ..services.caption_service import CaptionService
 from ..services.model_client import get_available_models
 from ..utils.file_utils import (
@@ -131,8 +131,8 @@ async def stream_video(filename: str):
 @router.post("/{filename}/caption", response_model=CaptionResponse)
 async def generate_caption(
     filename: str,
-    prompt: Optional[str] = None,
-    model: str = Query("qwen2vl", description="Model to use (qwen2vl or omnivinci)"),
+    request: CaptionGenerateRequest,
+    model: str = Query("qwen2vl", description="Model to use (qwen2vl, omnivinci, or qwen3omni)"),
     regenerate: bool = Query(False, description="Regenerate even if caption exists")
 ):
     """
@@ -140,8 +140,8 @@ async def generate_caption(
     
     Args:
         filename: Video filename
-        prompt: Optional custom prompt for caption generation
-        model: Model to use for generation (qwen2vl or omnivinci)
+        request: Request body containing optional prompt
+        model: Model to use for generation (qwen2vl, omnivinci, or qwen3omni)
         regenerate: If True, regenerate caption even if it exists
     """
     video_path = Path(VIDEOS_DIR) / filename
@@ -164,7 +164,7 @@ async def generate_caption(
     try:
         caption_data = await caption_service.generate_caption(
             video_filename=filename,
-            prompt=prompt,
+            prompt=request.prompt,
             model_key=model,
             regenerate=regenerate
         )
@@ -210,6 +210,17 @@ async def get_caption(filename: str):
             status_code=404,
             detail="Caption not found. Generate one first."
         )
+    
+    # Handle backward compatibility: old captions might not have prompt field
+    if "prompt" not in caption_data or caption_data.get("prompt") is None:
+        # Set default prompt based on model
+        model_key = caption_data.get("model_name", "qwen2vl")
+        default_prompts = {
+            "qwen2vl": "Describe what you see in this video, including actions, objects, and any visible text on screen.",
+            "omnivinci": "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
+            "qwen3omni": "Analyze this video comprehensively. Describe the visual content, audio elements, context, and explain the meaning or story. Include detailed reasoning about what's happening and why."
+        }
+        caption_data["prompt"] = default_prompts.get(model_key, "Describe this video in detail, including what you see, hear, and any actions taking place.")
     
     return CaptionResponse(**caption_data)
 
