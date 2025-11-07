@@ -1,0 +1,53 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+omnivinci-service/venv/
+*.log
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+build/
+dist/
+
+# Videos and captions
+backend/videos/*
+backend/captions/*
+!backend/videos/.gitkeep
+!backend/captions/.gitkeep
+
+# Model files
+models/
+*.pth
+*.bin
+*.safetensors
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+omnivinci-service/*.log
+
+
+
+
+

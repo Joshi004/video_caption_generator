@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: video-caption-backend
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./backend/videos:/app/videos
+      - ./backend/captions:/app/captions
+    environment:
+      - QWEN2VL_API_URL=http://host.docker.internal:8000
+      - OMNIVINCI_API_URL=http://host.docker.internal:8001
+      - QWEN3OMNI_API_URL=http://host.docker.internal:8002
+      - REMOTE_VIDEO_URL=http://host.docker.internal:8080
+      - DEFAULT_MODEL=qwen2vl
+      - VIDEOS_DIR=/app/videos
+      - CAPTIONS_DIR=/app/captions
+      - MAX_VIDEO_SIZE_MB=100
+      - MAX_VIDEO_DURATION_SEC=300
+      - BACKEND_PORT=8011
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - video-caption-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: video-caption-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8011
+    depends_on:
+      - backend
+    networks:
+      - video-caption-network
+    restart: unless-stopped
+
+networks:
+  video-caption-network:
+    driver: bridge
+
