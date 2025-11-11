@@ -213,7 +213,7 @@ class CaptionService:
         
         # Create model client for selected model
         from .model_client import VLLMClient
-        model_client = VLLMClient(model_key=model_key)
+        model_client = VLLMClient(model_key=model_key, videos_dir=str(self.videos_dir))
         
         # Generate caption using vLLM service
         result = await model_client.generate_caption(

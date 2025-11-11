@@ -3,6 +3,7 @@ import os
 import time
 from typing import Dict, Any, Optional
 from pathlib import Path
+from ..utils.file_utils import check_audio_exists, get_audio_filename
 
 
 # Model configuration
@@ -31,13 +32,14 @@ AVAILABLE_MODELS = {
 class VLLMClient:
     """HTTP client for communicating with remote vLLM service via OpenAI-compatible API"""
     
-    def __init__(self, model_key: str = "qwen2vl", video_url_base: str = None):
+    def __init__(self, model_key: str = "qwen2vl", video_url_base: str = None, videos_dir: str = None):
         """
         Initialize vLLM client for a specific model
         
         Args:
             model_key: Key from AVAILABLE_MODELS ('qwen2vl' or 'omnivinci')
             video_url_base: Base URL for video HTTP server
+            videos_dir: Directory where video files are stored (for checking audio files)
         """
         if model_key not in AVAILABLE_MODELS:
             raise ValueError(f"Unknown model: {model_key}. Available: {list(AVAILABLE_MODELS.keys())}")
@@ -50,6 +52,7 @@ class VLLMClient:
         # Video URL base - use localhost:8080 for remote vLLM to access video HTTP server on worker-9
         # Not host.docker.internal - that's only for backend to access Mac's tunneled services
         self.video_url_base = "http://127.0.0.1:8080"
+        self.videos_dir = videos_dir
         self.timeout = 300.0  # 5 minutes timeout for video processing
     
     async def health_check(self) -> Dict[str, Any]:
@@ -98,6 +101,13 @@ class VLLMClient:
         # Construct video URL for model to access
         video_url = f"{self.video_url_base}/{video_filename}"
         
+        # Check if audio file exists for this video
+        audio_url = None
+        if self.videos_dir:
+            if check_audio_exists(video_filename, self.videos_dir):
+                audio_filename = get_audio_filename(video_filename)
+                audio_url = f"{self.video_url_base}/{audio_filename}"
+        
         # Default prompt if none provided
         if not prompt:
             prompt = "Describe this video in detail, including what you see, hear, and any actions taking place."
@@ -107,6 +117,7 @@ class VLLMClient:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 # OmniVinci uses custom /infer/video endpoint with form data
+                # Note: OmniVinci endpoint may not support separate audio stream
                 if self.model_key == "omnivinci":
                     response = await client.post(
                         f"{self.vllm_url}/infer/video",
@@ -127,17 +138,27 @@ class VLLMClient:
                         "tokens_used": {}
                     }
                 
-                # Other models use vLLM OpenAI-compatible API
+                # Other models use vLLM OpenAI-compatible API (qwen2vl, qwen3omni)
                 else:
+                    # Build content array with video, audio (if available), and text prompt
+                    # Order matches the API format: video_url, audio_url, text
+                    content_items = [
+                        {"type": "video_url", "video_url": {"url": video_url}}
+                    ]
+                    
+                    # Add audio URL if available
+                    if audio_url:
+                        content_items.append({"type": "audio_url", "audio_url": {"url": audio_url}})
+                    
+                    # Add text prompt last
+                    content_items.append({"type": "text", "text": prompt})
+                    
                     request_payload = {
                         "model": self.model_name,
                         "messages": [
                             {
                                 "role": "user",
-                                "content": [
-                                    {"type": "text", "text": prompt},
-                                    {"type": "video_url", "video_url": {"url": video_url}}
-                                ]
+                                "content": content_items
                             }
                         ],
                         "max_tokens": 512,
