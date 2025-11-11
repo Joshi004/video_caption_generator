@@ -153,6 +153,28 @@ class VLLMClient:
                     # Add text prompt last
                     content_items.append({"type": "text", "text": prompt})
                     
+                    # Model-specific token limits and parameters
+                    # Qwen3-Omni-30B supports comprehensive analysis with higher token limits
+                    model_params = {
+                        "qwen3omni": {
+                            "max_tokens": int(os.getenv("QWEN3OMNI_MAX_TOKENS", "16384")),
+                            "temperature": float(os.getenv("QWEN3OMNI_TEMPERATURE", "0.6")),
+                            "top_p": float(os.getenv("QWEN3OMNI_TOP_P", "0.95"))
+                        },
+                        "qwen2vl": {
+                            "max_tokens": int(os.getenv("QWEN2VL_MAX_TOKENS", "2048")),
+                            "temperature": float(os.getenv("QWEN2VL_TEMPERATURE", "0.7")),
+                            "top_p": float(os.getenv("QWEN2VL_TOP_P", "0.9"))
+                        }
+                    }
+                    
+                    # Get parameters for current model, with defaults
+                    params = model_params.get(self.model_key, {
+                        "max_tokens": 2048,
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    })
+                    
                     request_payload = {
                         "model": self.model_name,
                         "messages": [
@@ -161,8 +183,9 @@ class VLLMClient:
                                 "content": content_items
                             }
                         ],
-                        "max_tokens": 512,
-                        "temperature": 0.7
+                        "max_tokens": params["max_tokens"],
+                        "temperature": params["temperature"],
+                        "top_p": params["top_p"]
                     }
                     
                     response = await client.post(
