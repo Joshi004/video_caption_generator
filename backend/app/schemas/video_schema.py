@@ -12,6 +12,9 @@ class VideoInfo(BaseModel):
     caption_text: Optional[str] = None
     model_used: Optional[str] = None
     created_at: Optional[datetime] = None
+    has_audio: bool = False  # Whether audio file exists
+    audio_filename: Optional[str] = None  # WAV filename if audio exists
+    audio_size: Optional[int] = None  # Audio file size in bytes
 
 
 class CaptionResponse(BaseModel):

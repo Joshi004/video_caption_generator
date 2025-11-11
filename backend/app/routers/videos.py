@@ -11,7 +11,10 @@ from ..utils.file_utils import (
     get_video_files,
     get_video_duration,
     validate_video_constraints,
-    extract_model_from_caption_filename
+    extract_model_from_caption_filename,
+    check_audio_exists,
+    get_audio_filename,
+    extract_audio_to_wav
 )
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
@@ -69,6 +72,17 @@ async def list_videos():
         # Use first caption's text for preview
         caption_text = all_captions[0]['caption'] if all_captions else None
         
+        # Check for audio file
+        has_audio = check_audio_exists(filename, VIDEOS_DIR)
+        audio_filename = None
+        audio_size = None
+        
+        if has_audio:
+            audio_filename = get_audio_filename(filename)
+            audio_path = Path(VIDEOS_DIR) / audio_filename
+            if audio_path.exists():
+                audio_size = audio_path.stat().st_size
+        
         video_info = VideoInfo(
             filename=filename,
             size=file_size,
@@ -76,7 +90,10 @@ async def list_videos():
             has_caption=has_caption,
             caption_text=caption_text,
             model_used=model_used,
-            created_at=created_at
+            created_at=created_at,
+            has_audio=has_audio,
+            audio_filename=audio_filename,
+            audio_size=audio_size
         )
         
         videos_info.append(video_info)
@@ -237,5 +254,88 @@ async def delete_caption(filename: str):
         )
     
     return {"message": "Caption deleted successfully", "filename": filename}
+
+
+@router.post("/{filename}/audio")
+async def generate_audio(filename: str):
+    """
+    Extract audio from video and save as WAV file
+    
+    Args:
+        filename: Video filename
+    
+    Returns:
+        Audio file information
+    """
+    video_path = Path(VIDEOS_DIR) / filename
+    
+    # Validate video exists
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Check if audio already exists
+    if check_audio_exists(filename, VIDEOS_DIR):
+        raise HTTPException(
+            status_code=409,
+            detail="Audio file already exists. Delete it first to regenerate."
+        )
+    
+    # Generate audio filename
+    audio_filename = get_audio_filename(filename)
+    audio_path = Path(VIDEOS_DIR) / audio_filename
+    
+    try:
+        # Extract audio to WAV
+        output_path = extract_audio_to_wav(str(video_path), str(audio_path))
+        
+        # Get audio file size
+        audio_file = Path(output_path)
+        audio_size = audio_file.stat().st_size
+        
+        return {
+            "success": True,
+            "video_filename": filename,
+            "audio_filename": audio_filename,
+            "audio_path": output_path,
+            "file_size_bytes": audio_size,
+            "file_size_mb": round(audio_size / (1024 * 1024), 2)
+        }
+    
+    except ValueError as e:
+        # Video has no audio track
+        if "no audio track" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Video has no audio track")
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
+    except Exception as e:
+        error_detail = str(e)
+        raise HTTPException(status_code=500, detail=f"Failed to extract audio: {error_detail}")
+
+
+@router.get("/{filename}/audio")
+async def get_audio(filename: str):
+    """Download audio file (WAV) for a video"""
+    video_path = Path(VIDEOS_DIR) / filename
+    
+    # Validate video exists
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Check if audio exists
+    if not check_audio_exists(filename, VIDEOS_DIR):
+        raise HTTPException(status_code=404, detail="Audio file not found. Generate it first.")
+    
+    # Get audio file path
+    audio_filename = get_audio_filename(filename)
+    audio_path = Path(VIDEOS_DIR) / audio_filename
+    
+    return FileResponse(
+        str(audio_path),
+        media_type="audio/wav",
+        filename=audio_filename
+    )
 
 

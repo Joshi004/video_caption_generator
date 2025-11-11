@@ -12,8 +12,9 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import AudioFileIcon from '@mui/icons-material/AudioFile';
 
-const VideoCard = ({ video, onGenerateCaption, onViewCaption }) => {
+const VideoCard = ({ video, onGenerateCaption, onViewCaption, onGenerateAudio }) => {
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -58,12 +59,21 @@ const VideoCard = ({ video, onGenerateCaption, onViewCaption }) => {
           >
             {video.filename}
           </Typography>
-          <Chip
-            label={video.has_caption ? 'Captioned' : 'No Caption'}
-            color={video.has_caption ? 'success' : 'warning'}
-            size="small"
-            sx={{ ml: 1, flexShrink: 0 }}
-          />
+          <Box display="flex" gap={0.5} flexShrink={0}>
+            <Chip
+              label={video.has_caption ? 'Captioned' : 'No Caption'}
+              color={video.has_caption ? 'success' : 'warning'}
+              size="small"
+            />
+            {video.has_audio && (
+              <Chip
+                label="Audio"
+                color="info"
+                size="small"
+                icon={<AudioFileIcon />}
+              />
+            )}
+          </Box>
         </Box>
 
         <Stack spacing={1}>
@@ -134,34 +144,47 @@ const VideoCard = ({ video, onGenerateCaption, onViewCaption }) => {
       </CardContent>
 
       <CardActions sx={{ p: 2, pt: 0 }}>
-        <Stack direction="row" spacing={1} width="100%">
-          {!video.has_caption ? (
+        <Stack direction="column" spacing={1} width="100%">
+          <Stack direction="row" spacing={1} width="100%">
+            {!video.has_caption ? (
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => onGenerateCaption(video.filename)}
+              >
+                Generate Caption
+              </Button>
+            ) : (
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => onGenerateCaption(video.filename, true)}
+              >
+                Regenerate
+              </Button>
+            )}
             <Button
               fullWidth
               variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => onGenerateCaption(video.filename)}
+              startIcon={<VisibilityIcon />}
+              onClick={() => onViewCaption(video)}
             >
-              Generate Caption
+              {video.has_caption ? 'View' : 'Play'}
             </Button>
-          ) : (
+          </Stack>
+          {!video.has_audio && onGenerateAudio && (
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => onGenerateCaption(video.filename, true)}
+              color="secondary"
+              startIcon={<AudioFileIcon />}
+              onClick={() => onGenerateAudio(video.filename)}
             >
-              Regenerate
+              Generate Audio
             </Button>
           )}
-          <Button
-            fullWidth
-            variant="contained"
-            startIcon={<VisibilityIcon />}
-            onClick={() => onViewCaption(video)}
-          >
-            {video.has_caption ? 'View' : 'Play'}
-          </Button>
         </Stack>
       </CardActions>
     </Card>

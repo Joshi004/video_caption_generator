@@ -64,6 +64,17 @@ export const videoAPI = {
     const response = await api.delete(`/api/videos/${filename}/caption`);
     return response.data;
   },
+
+  // Generate audio from video
+  generateAudio: async (filename) => {
+    const response = await api.post(`/api/videos/${filename}/audio`);
+    return response.data;
+  },
+
+  // Get audio file URL
+  getAudioUrl: (filename) => {
+    return `${API_BASE_URL}/api/videos/${filename}/audio`;
+  },
 };
 
 // Health check

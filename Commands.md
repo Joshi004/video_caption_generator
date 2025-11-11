@@ -93,8 +93,15 @@ ssh -L 8000:localhost:8000 -L 8080:localhost:8080 naresh@85.234.64.44
 # Run tunnel in background
 ssh -fN -o ExitOnForwardFailure=yes \
   -L 8000:worker-9:8000 \
-  -L 8080:worker-9:8080 \
+  -L 8001:worker-9:8001 \
+  -L 8002:worker-9:8002 \
   naresh@85.234.64.44
+
+
+ssh -fN -o ExitOnForwardFailure=yes \
+  -L 8002:worker-9:8002 \
+  naresh@85.234.64.44
+
 
 If 8000 is in use
 

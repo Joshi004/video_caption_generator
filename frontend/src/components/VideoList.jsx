@@ -129,6 +129,35 @@ const VideoList = () => {
     }
   };
 
+  // Generate audio from video
+  const handleGenerateAudio = async (filename) => {
+    try {
+      setProcessing(true);
+      setProcessingMessage('Extracting audio from video...');
+
+      await videoAPI.generateAudio(filename);
+      
+      setSnackbar({
+        open: true,
+        message: 'Audio generated successfully!',
+        severity: 'success',
+      });
+
+      // Refresh video list
+      await fetchVideos();
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || err.message;
+      setSnackbar({
+        open: true,
+        message: `Failed to generate audio: ${errorMessage}`,
+        severity: 'error',
+      });
+      console.error('Error generating audio:', err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   // View caption(s)
   const handleViewCaption = (video) => {
     setSelectedVideo(video);
@@ -249,6 +278,7 @@ const VideoList = () => {
                 video={video}
                 onGenerateCaption={handleGenerateCaption}
                 onViewCaption={handleViewCaption}
+                onGenerateAudio={handleGenerateAudio}
               />
             </Grid>
           ))}
