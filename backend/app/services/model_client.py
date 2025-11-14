@@ -142,8 +142,19 @@ class VLLMClient:
                 else:
                     # Build content array with video, audio (if available), and text prompt
                     # Order matches the API format: video_url, audio_url, text
+                    
+                    # Qwen3-Omni specific video processing parameters
+                    if self.model_key == "qwen3omni":
+                        video_url_obj = {
+                            "url": video_url,
+                            "seconds_per_chunk": 1,
+                            "fps": 2
+                        }
+                    else:
+                        video_url_obj = {"url": video_url}
+                    
                     content_items = [
-                        {"type": "video_url", "video_url": {"url": video_url}}
+                        {"type": "video_url", "video_url": video_url_obj}
                     ]
                     
                     # Add audio URL if available
