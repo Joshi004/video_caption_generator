@@ -179,7 +179,8 @@ class CaptionService:
                     default_prompts = {
                         "qwen2vl": "Describe what you see in this video, including actions, objects, and any visible text on screen.",
                         "omnivinci": "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
-                        "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message."
+                        "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message.",
+                        "qwen3omni_captioner": "Audio-only captioning model - no prompt needed (prompt is ignored)."
                     }
                     default_prompt = default_prompts.get(model_key, "Describe this video in detail, including what you see, hear, and any actions taking place.")
                     existing_caption["prompt"] = default_prompt
@@ -203,7 +204,8 @@ class CaptionService:
             default_prompts = {
                 "qwen2vl": "Describe what you see in this video, including actions, objects, and any visible text on screen.",
                 "omnivinci": "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
-                "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message."
+                "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message.",
+                "qwen3omni_captioner": "Audio-only captioning model - no prompt needed (prompt is ignored)."
             }
             prompt = default_prompts.get(model_key, "Describe this video in detail, including what you see, hear, and any actions taking place.")
         

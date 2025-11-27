@@ -13,6 +13,10 @@ services:
       - QWEN2VL_API_URL=http://host.docker.internal:8000
       - OMNIVINCI_API_URL=http://host.docker.internal:8001
       - QWEN3OMNI_API_URL=http://host.docker.internal:8002
+      - QWEN3OMNI_CAPTIONER_API_URL=http://host.docker.internal:8003
+      - QWEN3OMNI_CAPTIONER_TEMPERATURE=0.2
+      - QWEN3OMNI_CAPTIONER_MAX_TOKENS=16384
+      - QWEN3OMNI_CAPTIONER_TOP_P=0.95
       - REMOTE_VIDEO_URL=http://host.docker.internal:8080
       - DEFAULT_MODEL=qwen2vl
       - VIDEOS_DIR=/app/videos

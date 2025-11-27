@@ -25,6 +25,12 @@ AVAILABLE_MODELS = {
         "url": os.getenv("QWEN3OMNI_API_URL", "http://localhost:8002"),
         "display_name": "Qwen3-Omni-30B",
         "short_name": "qwen3omni"
+    },
+    "qwen3omni_captioner": {
+        "name": "Qwen/Qwen3-Omni-30B-A3B-Captioner",
+        "url": os.getenv("QWEN3OMNI_CAPTIONER_API_URL", "http://localhost:8003"),
+        "display_name": "Qwen3-Omni-Captioner",
+        "short_name": "qwen3omni_captioner"
     }
 }
 
@@ -98,6 +104,75 @@ class VLLMClient:
         Returns:
             Dictionary with caption and metadata
         """
+        # Qwen3-Omni-Captioner is audio-only - requires audio file
+        if self.model_key == "qwen3omni_captioner":
+            # Check if audio file exists for this video
+            if not self.videos_dir:
+                raise Exception("Videos directory not configured for audio-only model")
+            
+            if not check_audio_exists(video_filename, self.videos_dir):
+                raise Exception(f"Audio file required for Qwen3-Omni-Captioner. Please extract audio from video first.")
+            
+            audio_filename = get_audio_filename(video_filename)
+            audio_url = f"{self.video_url_base}/{audio_filename}"
+            
+            start_time = time.time()
+            
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    # Model-specific parameters for captioner
+                    model_params = {
+                        "max_tokens": int(os.getenv("QWEN3OMNI_CAPTIONER_MAX_TOKENS", "16384")),
+                        "temperature": float(os.getenv("QWEN3OMNI_CAPTIONER_TEMPERATURE", "0.2")),
+                        "top_p": float(os.getenv("QWEN3OMNI_CAPTIONER_TOP_P", "0.95"))
+                    }
+                    
+                    # Audio-only request - no video, no text prompt, no model name
+                    request_payload = {
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "audio_url",
+                                        "audio_url": {"url": audio_url}
+                                    }
+                                ]
+                            }
+                        ],
+                        "max_tokens": model_params["max_tokens"],
+                        "temperature": model_params["temperature"],
+                        "top_p": model_params["top_p"]
+                    }
+                    
+                    response = await client.post(
+                        f"{self.vllm_url}/v1/chat/completions",
+                        json=request_payload,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    
+                    processing_time = time.time() - start_time
+                    
+                    # Extract caption from OpenAI response format
+                    caption = result["choices"][0]["message"]["content"]
+                    
+                    return {
+                        "caption": caption,
+                        "processing_time": processing_time,
+                        "model": self.model_name,
+                        "tokens_used": result.get("usage", {})
+                    }
+            
+            except httpx.TimeoutException:
+                raise Exception("Model service request timed out (>5 minutes)")
+            except httpx.HTTPStatusError as e:
+                error_detail = e.response.text
+                raise Exception(f"vLLM service error: {e.response.status_code} - {error_detail}")
+            except Exception as e:
+                raise Exception(f"Failed to generate caption: {str(e)}")
+        
         # Construct video URL for model to access
         video_url = f"{self.video_url_base}/{video_filename}"
         
@@ -139,6 +214,7 @@ class VLLMClient:
                     }
                 
                 # Other models use vLLM OpenAI-compatible API (qwen2vl, qwen3omni)
+                # Note: qwen3omni_captioner is handled separately above
                 else:
                     # Build content array with video, audio (if available), and text prompt
                     # Order matches the API format: video_url, audio_url, text

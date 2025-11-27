@@ -21,7 +21,8 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 const DEFAULT_PROMPTS = {
   qwen2vl: "Describe what you see in this video, including actions, objects, and any visible text on screen.",
   omnivinci: "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
-  qwen3omni: "Analyze this video comprehensively. Describe the visual content, audio elements, context, and explain the meaning or story. Include detailed reasoning about what's happening and why."
+  qwen3omni: "Analyze this video comprehensively. Describe the visual content, audio elements, context, and explain the meaning or story. Include detailed reasoning about what's happening and why.",
+  qwen3omni_captioner: "Audio-only captioning model - no prompt needed (prompt is ignored)."
 };
 
 const ModelSelector = ({ open, onClose, onSelect, models, defaultModel }) => {
@@ -100,6 +101,7 @@ const ModelSelector = ({ open, onClose, onSelect, models, defaultModel }) => {
                         {modelKey === 'qwen2vl' && '7B parameters • Fast • Lightweight • Via vLLM'}
                         {modelKey === 'omnivinci' && '9B parameters • Vision+Audio+Text • NVIDIA • Via Transformers'}
                         {modelKey === 'qwen3omni' && '30B parameters • Thinking capability • Vision+Audio+Text'}
+                        {modelKey === 'qwen3omni_captioner' && '30B parameters • Audio-only • Fine-grained audio captioning • No prompts needed'}
                       </Typography>
                     </Box>
                   }
@@ -115,6 +117,7 @@ const ModelSelector = ({ open, onClose, onSelect, models, defaultModel }) => {
           <Typography variant="caption" color="text.secondary">
             <strong>Tip:</strong> All models have Apache 2.0 license (commercial-friendly).
             Qwen2-VL is fastest. OmniVinci adds audio. Qwen3-Omni has thinking capability.
+            Qwen3-Omni-Captioner is audio-only and generates fine-grained audio descriptions.
           </Typography>
         </Box>
 
@@ -142,7 +145,12 @@ const ModelSelector = ({ open, onClose, onSelect, models, defaultModel }) => {
             onChange={(e) => setCustomPrompt(e.target.value)}
             placeholder={DEFAULT_PROMPTS[selectedModel]}
             variant="outlined"
-            helperText="Edit to focus on specific aspects (actions, audio, text, emotions, etc.)"
+            disabled={selectedModel === 'qwen3omni_captioner'}
+            helperText={
+              selectedModel === 'qwen3omni_captioner' 
+                ? "This model is audio-only and does not accept text prompts. Audio will be automatically extracted from the video."
+                : "Edit to focus on specific aspects (actions, audio, text, emotions, etc.)"
+            }
           />
         </Box>
       </DialogContent>

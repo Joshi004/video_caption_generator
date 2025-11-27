@@ -149,7 +149,7 @@ async def stream_video(filename: str):
 async def generate_caption(
     filename: str,
     request: CaptionGenerateRequest,
-    model: str = Query("qwen2vl", description="Model to use (qwen2vl, omnivinci, or qwen3omni)"),
+    model: str = Query("qwen2vl", description="Model to use (qwen2vl, omnivinci, qwen3omni, or qwen3omni_captioner)"),
     regenerate: bool = Query(False, description="Regenerate even if caption exists")
 ):
     """
@@ -158,7 +158,7 @@ async def generate_caption(
     Args:
         filename: Video filename
         request: Request body containing optional prompt
-        model: Model to use for generation (qwen2vl, omnivinci, or qwen3omni)
+        model: Model to use for generation (qwen2vl, omnivinci, qwen3omni, or qwen3omni_captioner)
         regenerate: If True, regenerate caption even if it exists
     """
     video_path = Path(VIDEOS_DIR) / filename
@@ -176,6 +176,20 @@ async def generate_caption(
     
     if not is_valid:
         raise HTTPException(status_code=413, detail=error_msg)
+    
+    # Qwen3-Omni-Captioner requires audio file
+    if model == "qwen3omni_captioner":
+        if not check_audio_exists(filename, VIDEOS_DIR):
+            # Try to auto-extract audio
+            try:
+                audio_filename = get_audio_filename(filename)
+                audio_path = Path(VIDEOS_DIR) / audio_filename
+                extract_audio_to_wav(str(video_path), str(audio_path))
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Qwen3-Omni-Captioner requires audio. Failed to extract audio: {str(e)}"
+                )
     
     # Generate caption with selected model
     try:
@@ -235,7 +249,8 @@ async def get_caption(filename: str):
         default_prompts = {
             "qwen2vl": "Describe what you see in this video, including actions, objects, and any visible text on screen.",
             "omnivinci": "Describe this video including both visual content and audio track. Mention any speech, music, sounds, or audio details you detect.",
-            "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message."
+            "qwen3omni": "Analyze the video thoroughly and provide a cohesive, narrative-style description. Integrate all elements — visuals, sounds, dialogue, objects, atmosphere, and any other details — into a single, unified account. Do not separate the discussion into sections about audio or visuals; instead, blend everything together naturally, as if describing the experience of watching the video in real time. Focus on explaining what's happening, why it's happening, and what it means within the context of the overall story or message.",
+            "qwen3omni_captioner": "Audio-only captioning model - no prompt needed (prompt is ignored)."
         }
         caption_data["prompt"] = default_prompts.get(model_key, "Describe this video in detail, including what you see, hear, and any actions taking place.")
     
